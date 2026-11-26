@@ -189,7 +189,7 @@ function App() {
 
               <section className="metrics-grid" aria-label="Resumen de turnos">
                 <MetricCard titulo="Turnos de hoy" valor={resumen.hoy} detalle="Registrados para hoy" />
-                <MetricCard titulo="Proximos turnos" valor={resumen.proximos} detalle="Desde este momento" />
+                <MetricCard titulo="Proximos turnos" valor={resumen.proximos.length} detalle="Desde este momento" />
                 <MetricCard titulo="Total de turnos" valor={resumen.total} detalle="En toda la agenda" />
               </section>
 
