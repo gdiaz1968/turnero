@@ -2,6 +2,23 @@ const express = require("express");
 const router = express.Router();
 const { pool } = require("../config/database");
 
+const ESTADOS_VALIDOS = [
+  "PENDIENTE",
+  "CONFIRMADO",
+  "RECHAZADO",
+  "CANCELADO",
+  "FINALIZADO"
+];
+
+const TRANSICIONES = {
+  PENDIENTE: ["CONFIRMADO", "RECHAZADO", "CANCELADO"],
+  REGISTRADO: ["CONFIRMADO", "RECHAZADO", "CANCELADO"],
+  CONFIRMADO: ["CANCELADO", "FINALIZADO"],
+  RECHAZADO: [],
+  CANCELADO: [],
+  FINALIZADO: []
+};
+
 function validarFecha(fecha) {
   const coincidencia = /^(\d{4})-(\d{2})-(\d{2})$/.exec(fecha);
   if (!coincidencia) return false;
@@ -29,7 +46,7 @@ function validarHora(hora) {
   return horas <= 23 && minutos <= 59 && segundos <= 59;
 }
 
-// Listar turnos. Si se envía ?fecha=AAAA-MM-DD, filtra por ese día.
+// Listar turnos. Si se envia ?fecha=AAAA-MM-DD, filtra por ese dia.
 router.get("/", async (req, res) => {
   try {
     const { fecha } = req.query;
@@ -37,6 +54,12 @@ router.get("/", async (req, res) => {
     let filtro = "";
 
     if (fecha) {
+      if (!validarFecha(String(fecha))) {
+        return res.status(400).json({
+          success: false,
+          message: "La fecha del filtro no es valida."
+        });
+      }
       parametros.push(fecha);
       filtro = "WHERE t.fecha = $1";
     }
@@ -71,7 +94,60 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Registrar cliente y turno en una única operación.
+// Cambiar el estado de un turno desde la agenda profesional.
+router.patch("/:id/estado", async (req, res) => {
+  const id = Number(req.params.id);
+  const nuevoEstado = String((req.body || {}).estado || "").trim().toUpperCase();
+
+  if (!Number.isSafeInteger(id) || id <= 0) {
+    return res.status(400).json({ success: false, message: "El identificador del turno no es valido." });
+  }
+
+  if (!ESTADOS_VALIDOS.includes(nuevoEstado)) {
+    return res.status(400).json({ success: false, message: "El estado solicitado no es valido." });
+  }
+
+  try {
+    const actual = await pool.query(
+      "SELECT estado FROM turnos WHERE id = $1",
+      [id]
+    );
+
+    if (actual.rowCount === 0) {
+      return res.status(404).json({ success: false, message: "No se encontro el turno solicitado." });
+    }
+
+    const estadoActual = actual.rows[0].estado;
+    if (!(TRANSICIONES[estadoActual] || []).includes(nuevoEstado)) {
+      return res.status(409).json({
+        success: false,
+        message: "No se puede cambiar el turno desde " + estadoActual + " a " + nuevoEstado + "."
+      });
+    }
+
+    const actualizado = await pool.query(
+      `UPDATE turnos
+       SET estado = $1
+       WHERE id = $2
+       RETURNING id, estado`,
+      [nuevoEstado, id]
+    );
+
+    res.json({
+      success: true,
+      message: "El estado del turno fue actualizado.",
+      turno: actualizado.rows[0]
+    });
+  } catch (error) {
+    console.error("Error actualizando estado del turno:", error);
+    res.status(500).json({
+      success: false,
+      message: "No se pudo actualizar el estado del turno."
+    });
+  }
+});
+
+// Registrar cliente y turno en una unica operacion.
 router.post("/", async (req, res) => {
   const cuerpo = req.body || {};
   const nombre = String(cuerpo.nombre || "").trim();
@@ -84,7 +160,7 @@ router.post("/", async (req, res) => {
   if (!nombre || !telefono || !servicio || !fecha || !hora) {
     return res.status(400).json({
       success: false,
-      message: "Completá nombre, teléfono, servicio, fecha y hora."
+      message: "Completa nombre, telefono, servicio, fecha y hora."
     });
   }
 
@@ -93,7 +169,7 @@ router.post("/", async (req, res) => {
   }
 
   if (telefono.length > 40) {
-    return res.status(400).json({ success: false, message: "El teléfono no puede superar los 40 caracteres." });
+    return res.status(400).json({ success: false, message: "El telefono no puede superar los 40 caracteres." });
   }
 
   if (servicio.length > 120) {
@@ -105,11 +181,11 @@ router.post("/", async (req, res) => {
   }
 
   if (!validarFecha(fecha)) {
-    return res.status(400).json({ success: false, message: "La fecha no es válida. Seleccioná una fecha del calendario." });
+    return res.status(400).json({ success: false, message: "La fecha no es valida. Selecciona una fecha del calendario." });
   }
 
   if (!validarHora(hora)) {
-    return res.status(400).json({ success: false, message: "La hora no es válida. Seleccioná una hora válida." });
+    return res.status(400).json({ success: false, message: "La hora no es valida. Selecciona una hora valida." });
   }
 
   let conexion;
@@ -137,7 +213,7 @@ router.post("/", async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: "El turno quedó registrado.",
+      message: "El turno quedo registrado como pendiente de confirmacion.",
       id: turno.rows[0].id
     });
   } catch (error) {
@@ -145,7 +221,7 @@ router.post("/", async (req, res) => {
       try {
         await conexion.query("ROLLBACK");
       } catch (errorRollback) {
-        console.error("Error revirtiendo la transacción:", errorRollback);
+        console.error("Error revirtiendo la transaccion:", errorRollback);
       }
     }
 
@@ -158,7 +234,7 @@ router.post("/", async (req, res) => {
 
     res.status(500).json({
       success: false,
-      message: "No se pudo guardar el turno por un error del servidor. Revisá la consola del backend."
+      message: "No se pudo guardar el turno por un error del servidor. Revisa la consola del backend."
     });
   } finally {
     if (conexion) conexion.release();
