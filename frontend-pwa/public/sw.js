@@ -1,5 +1,5 @@
 const CACHE_NAME = 'turnero-pwa-v1'
-const APP_SHELL = ['/','/solicitar-turno','/manifest.webmanifest','/icon.svg']
+const APP_SHELL = ['/','/manifest.webmanifest','/icon.svg']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)))
@@ -16,7 +16,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url)
   if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return
   if (request.mode === 'navigate') {
-    event.respondWith(fetch(request).catch(() => caches.match('/index.html').then((cached) => cached || caches.match('/'))))
+    event.respondWith(fetch(request).catch(() => caches.match('/').then((cached) => cached)))
     return
   }
   event.respondWith(caches.match(request).then((cached) => cached || fetch(request).then((response) => {
