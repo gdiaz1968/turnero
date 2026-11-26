@@ -1,6 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3032').replace(/\/$/, '')
+
+const vistas = [
+  { id: 'inicio', texto: 'Inicio' },
+  { id: 'turnos', texto: 'Turnos' },
+  { id: 'nuevo', texto: 'Nuevo turno' },
+]
 
 function fechaLocal() {
   const hoy = new Date()
@@ -8,6 +14,32 @@ function fechaLocal() {
   const mes = String(hoy.getMonth() + 1).padStart(2, '0')
   const dia = String(hoy.getDate()).padStart(2, '0')
   return `${anio}-${mes}-${dia}`
+}
+
+function formatearFecha(fecha) {
+  if (!fecha) return ''
+  const [anio, mes, dia] = fecha.slice(0, 10).split('-')
+  return `${dia}/${mes}/${anio}`
+}
+
+function fechaCompleta(fecha) {
+  const dias = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado']
+  const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+  return `${dias[fecha.getDay()]}, ${fecha.getDate()} de ${meses[fecha.getMonth()]} de ${fecha.getFullYear()}`
+}
+
+function horaEnMinutos(hora) {
+  const [horas = 0, minutos = 0] = String(hora || '').split(':').map(Number)
+  return horas * 60 + minutos
+}
+
+function normalizarMensaje(texto) {
+  return String(texto || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[º°·]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 function App() {
@@ -24,6 +56,7 @@ function App() {
   const [guardando, setGuardando] = useState(false)
   const [mensaje, setMensaje] = useState('')
   const [error, setError] = useState('')
+  const [vistaActiva, setVistaActiva] = useState('inicio')
 
   async function cargarTurnos() {
     try {
@@ -31,10 +64,10 @@ function App() {
       const respuesta = await fetch(`${API_URL}/api/turnos`)
       const datos = await respuesta.json()
       if (!respuesta.ok || !datos.success) throw new Error(datos.message || 'No se pudieron cargar los turnos.')
-      setTurnos(datos.turnos)
+      setTurnos(Array.isArray(datos.turnos) ? datos.turnos : [])
       setError('')
     } catch (e) {
-      setError(e.message || 'No se pudo conectar con el servidor.')
+      setError(normalizarMensaje(e.message || 'No se pudo conectar con el servidor.'))
     } finally {
       setCargando(false)
     }
@@ -43,6 +76,19 @@ function App() {
   useEffect(() => {
     cargarTurnos()
   }, [])
+
+  const resumen = useMemo(() => {
+    const hoy = fechaLocal()
+    const ahora = new Date()
+    const minutosAhora = ahora.getHours() * 60 + ahora.getMinutes()
+    const turnosHoy = turnos.filter((turno) => turno.fecha === hoy)
+    const proximos = turnos.filter((turno) => {
+      if (turno.fecha > hoy) return true
+      if (turno.fecha < hoy) return false
+      return horaEnMinutos(turno.hora) >= minutosAhora
+    })
+    return { hoy: turnosHoy.length, proximos: proximos.length, total: turnos.length, turnosHoy, proximos }
+  }, [turnos])
 
   function cambiarCampo(evento) {
     const { name, value } = evento.target
@@ -64,7 +110,7 @@ function App() {
       const datos = await respuesta.json()
       if (!respuesta.ok || !datos.success) throw new Error(datos.message || 'No se pudo guardar el turno.')
 
-      setMensaje(`Turno N.º ${datos.id} registrado correctamente.`)
+      setMensaje(`Turno numero ${datos.id} registrado correctamente.`)
       setFormulario({
         nombre: '',
         telefono: '',
@@ -74,96 +120,232 @@ function App() {
         observaciones: '',
       })
       await cargarTurnos()
+      setVistaActiva('turnos')
     } catch (e) {
-      setError(e.message || 'Ocurrió un error al guardar.')
+      setError(normalizarMensaje(e.message || 'Ocurrio un error al guardar.'))
     } finally {
       setGuardando(false)
     }
   }
 
+  const fechaDeHoy = fechaCompleta(new Date())
+
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-8 text-slate-800 sm:px-6">
-      <div className="mx-auto max-w-5xl">
-        <header className="mb-8">
-          <p className="text-sm font-semibold uppercase tracking-widest text-indigo-600">Agenda simple</p>
-          <h1 className="mt-2 text-3xl font-bold text-slate-900">TURNERO</h1>
-          <p className="mt-2 text-slate-600">Registrá un turno y consultá los que ya están guardados.</p>
+    <div className="app-shell">
+      <aside className="sidebar">
+        <div className="brand">
+          <div className="brand-mark">T</div>
+          <div>
+            <strong>TURNERO</strong>
+            <span>Gestion de agenda</span>
+          </div>
+        </div>
+
+        <p className="nav-caption">MENU PRINCIPAL</p>
+        <nav className="side-nav" aria-label="Menu principal">
+          {vistas.map((vista) => (
+            <button
+              key={vista.id}
+              type="button"
+              className={`nav-button ${vistaActiva === vista.id ? 'active' : ''}`}
+              onClick={() => { setVistaActiva(vista.id); setMensaje(''); setError('') }}
+            >
+              <span className="nav-indicator" />
+              {vista.texto}
+            </button>
+          ))}
+        </nav>
+
+        <div className="sidebar-footer">
+          <span className="connection-dot" />
+          Agenda conectada
+        </div>
+      </aside>
+
+      <main className="main-area">
+        <header className="topbar">
+          <div>
+            <p className="eyebrow">PANEL DE CONTROL</p>
+            <h1>{vistaActiva === 'inicio' ? 'Resumen de agenda' : vistaActiva === 'turnos' ? 'Turnos registrados' : 'Registrar un turno'}</h1>
+          </div>
+          <div className="topbar-date">{fechaDeHoy}</div>
         </header>
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,420px)_1fr]">
-          <section className="h-fit rounded-2xl bg-white p-6 shadow-sm">
-            <h2 className="mb-5 text-xl font-bold">Nuevo turno</h2>
-            <form onSubmit={guardarTurno} className="space-y-4">
-              <Campo etiqueta="Nombre del cliente">
-                <input name="nombre" value={formulario.nombre} onChange={cambiarCampo} required maxLength="120" placeholder="Nombre y apellido" className="campo" />
-              </Campo>
-              <Campo etiqueta="Teléfono">
-                <input name="telefono" value={formulario.telefono} onChange={cambiarCampo} required maxLength="40" placeholder="Número de contacto" className="campo" />
-              </Campo>
-              <Campo etiqueta="Servicio">
-                <input name="servicio" value={formulario.servicio} onChange={cambiarCampo} required maxLength="120" placeholder="Ej.: Corte de pelo" className="campo" />
-              </Campo>
-              <div className="grid grid-cols-2 gap-3">
-                <Campo etiqueta="Fecha">
-                  <input type="date" name="fecha" value={formulario.fecha} onChange={cambiarCampo} required className="campo" />
+        <div className="content-area">
+          {mensaje && <div className="notice success" role="status">{mensaje}</div>}
+          {error && <div className="notice error" role="alert">{error}</div>}
+
+          {vistaActiva === 'inicio' && (
+            <>
+              <section className="welcome-row">
+                <div>
+                  <h2>Bienvenido a TURNERO</h2>
+                  <p>Este es el estado actual de tu agenda.</p>
+                </div>
+                <button type="button" className="primary-button" onClick={() => { setVistaActiva('nuevo'); setMensaje(''); setError('') }}>
+                  Nuevo turno
+                </button>
+              </section>
+
+              <section className="metrics-grid" aria-label="Resumen de turnos">
+                <MetricCard titulo="Turnos de hoy" valor={resumen.hoy} detalle="Registrados para hoy" />
+                <MetricCard titulo="Proximos turnos" valor={resumen.proximos} detalle="Desde este momento" />
+                <MetricCard titulo="Total de turnos" valor={resumen.total} detalle="En toda la agenda" />
+              </section>
+
+              <section className="panel">
+                <div className="panel-heading">
+                  <div>
+                    <h2>Agenda de hoy</h2>
+                    <p>{formatearFecha(fechaLocal())}</p>
+                  </div>
+                  <button type="button" className="text-button" onClick={() => setVistaActiva('turnos')}>Ver todos</button>
+                </div>
+                {cargando ? (
+                  <EstadoVacio texto="Cargando turnos..." />
+                ) : resumen.turnosHoy.length === 0 ? (
+                  <EstadoVacio texto="No hay turnos registrados para hoy." />
+                ) : (
+                  <div className="appointment-list">
+                    {resumen.turnosHoy.map((turno) => <TurnoItem key={turno.id} turno={turno} />)}
+                  </div>
+                )}
+              </section>
+
+              <section className="panel">
+                <div className="panel-heading">
+                  <div>
+                    <h2>Proximos turnos</h2>
+                    <p>Los siguientes horarios de la agenda</p>
+                  </div>
+                </div>
+                {cargando ? (
+                  <EstadoVacio texto="Cargando turnos..." />
+                ) : resumen.proximos.length === 0 ? (
+                  <EstadoVacio texto="No hay turnos proximos registrados." />
+                ) : (
+                  <div className="appointment-list">
+                    {resumen.proximos.slice(0, 5).map((turno) => <TurnoItem key={turno.id} turno={turno} />)}
+                  </div>
+                )}
+              </section>
+            </>
+          )}
+
+          {vistaActiva === 'turnos' && (
+            <section className="panel">
+              <div className="panel-heading">
+                <div>
+                  <h2>Todos los turnos</h2>
+                  <p>Informacion consultada desde la base de datos</p>
+                </div>
+                <button type="button" className="secondary-button" onClick={cargarTurnos}>Actualizar</button>
+              </div>
+              {cargando ? (
+                <EstadoVacio texto="Cargando turnos..." />
+              ) : turnos.length === 0 ? (
+                <EstadoVacio texto="Todavia no hay turnos registrados." />
+              ) : (
+                <div className="appointment-list">
+                  {turnos.map((turno) => <TurnoItem key={turno.id} turno={turno} mostrarFecha />)}
+                </div>
+              )}
+            </section>
+          )}
+
+          {vistaActiva === 'nuevo' && (
+            <section className="panel form-panel">
+              <div className="panel-heading">
+                <div>
+                  <h2>Datos del turno</h2>
+                  <p>Completa los datos para guardar una nueva reserva.</p>
+                </div>
+              </div>
+              <form onSubmit={guardarTurno} className="turn-form">
+                <Campo etiqueta="Nombre del cliente">
+                  <input name="nombre" value={formulario.nombre} onChange={cambiarCampo} required maxLength="120" placeholder="Nombre y apellido" className="campo" />
                 </Campo>
-                <Campo etiqueta="Hora">
-                  <input type="time" name="hora" value={formulario.hora} onChange={cambiarCampo} required className="campo" />
+                <Campo etiqueta="Telefono">
+                  <input name="telefono" value={formulario.telefono} onChange={cambiarCampo} required maxLength="40" placeholder="Numero de contacto" className="campo" />
                 </Campo>
-              </div>
-              <Campo etiqueta="Observaciones (opcional)">
-                <textarea name="observaciones" value={formulario.observaciones} onChange={cambiarCampo} rows="3" maxLength="1000" placeholder="Algún dato adicional" className="campo resize-y" />
-              </Campo>
-
-              {mensaje && <p role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{mensaje}</p>}
-              {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-
-              <button disabled={guardando} className="w-full rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">
-                {guardando ? 'Guardando...' : 'Guardar turno'}
-              </button>
-            </form>
-          </section>
-
-          <section className="rounded-2xl bg-white p-6 shadow-sm">
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-xl font-bold">Turnos registrados</h2>
-                <p className="mt-1 text-sm text-slate-500">Los datos se consultan desde la base de datos.</p>
-              </div>
-              <button type="button" onClick={cargarTurnos} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-50">Actualizar</button>
-            </div>
-
-            {cargando ? (
-              <p className="py-8 text-center text-slate-500">Cargando turnos...</p>
-            ) : turnos.length === 0 ? (
-              <p className="rounded-xl bg-slate-50 px-4 py-8 text-center text-slate-500">Todavía no hay turnos registrados.</p>
-            ) : (
-              <div className="space-y-3">
-                {turnos.map((turno) => (
-                  <article key={turno.id} className="rounded-xl border border-slate-200 p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <h3 className="font-semibold text-slate-900">{turno.cliente}</h3>
-                      <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">{turno.estado}</span>
-                    </div>
-                    <p className="mt-1 text-sm text-slate-600">{turno.servicio}</p>
-                    <p className="mt-2 text-sm font-medium text-slate-700">{turno.fecha} · {turno.hora}</p>
-                    <p className="mt-1 text-sm text-slate-500">{turno.telefono}</p>
-                    {turno.observaciones && <p className="mt-2 text-sm text-slate-500">{turno.observaciones}</p>}
-                  </article>
-                ))}
-              </div>
-            )}
-          </section>
+                <Campo etiqueta="Servicio">
+                  <input name="servicio" value={formulario.servicio} onChange={cambiarCampo} required maxLength="120" placeholder="Ejemplo: Corte de pelo" className="campo" />
+                </Campo>
+                <div className="form-row">
+                  <Campo etiqueta="Fecha">
+                    <input type="date" name="fecha" value={formulario.fecha} onChange={cambiarCampo} required className="campo" />
+                  </Campo>
+                  <Campo etiqueta="Hora">
+                    <input type="time" name="hora" value={formulario.hora} onChange={cambiarCampo} required className="campo" />
+                  </Campo>
+                </div>
+                <Campo etiqueta="Observaciones (opcional)">
+                  <textarea name="observaciones" value={formulario.observaciones} onChange={cambiarCampo} rows="3" maxLength="1000" placeholder="Informacion adicional" className="campo campo-textarea" />
+                </Campo>
+                <div className="form-actions">
+                  <button type="button" className="secondary-button" onClick={() => setVistaActiva('inicio')}>Cancelar</button>
+                  <button type="submit" disabled={guardando} className="primary-button">
+                    {guardando ? 'Guardando...' : 'Guardar turno'}
+                  </button>
+                </div>
+              </form>
+            </section>
+          )}
         </div>
-      </div>
-    </main>
+      </main>
+
+      <nav className="mobile-nav" aria-label="Navegacion principal">
+        {vistas.map((vista) => (
+          <button
+            key={vista.id}
+            type="button"
+            className={`mobile-nav-button ${vistaActiva === vista.id ? 'active' : ''}`}
+            onClick={() => { setVistaActiva(vista.id); setMensaje(''); setError('') }}
+          >
+            {vista.texto}
+          </button>
+        ))}
+      </nav>
+    </div>
   )
+}
+
+function MetricCard({ titulo, valor, detalle }) {
+  return (
+    <article className="metric-card">
+      <p>{titulo}</p>
+      <strong>{valor}</strong>
+      <span>{detalle}</span>
+    </article>
+  )
+}
+
+function TurnoItem({ turno, mostrarFecha = false }) {
+  return (
+    <article className="appointment-item">
+      <div className="appointment-time">
+        <strong>{turno.hora}</strong>
+        {mostrarFecha && <span>{formatearFecha(turno.fecha)}</span>}
+      </div>
+      <div className="appointment-info">
+        <strong>{turno.cliente}</strong>
+        <span>{turno.servicio}</span>
+        <span>{turno.telefono}</span>
+        {turno.observaciones && <span>{turno.observaciones}</span>}
+      </div>
+      <span className="status-label">{normalizarMensaje(turno.estado)}</span>
+    </article>
+  )
+}
+
+function EstadoVacio({ texto }) {
+  return <div className="empty-state">{texto}</div>
 }
 
 function Campo({ etiqueta, children }) {
   return (
-    <label className="block space-y-1.5">
-      <span className="text-sm font-medium text-slate-700">{etiqueta}</span>
+    <label className="form-field">
+      <span>{etiqueta}</span>
       {children}
     </label>
   )
