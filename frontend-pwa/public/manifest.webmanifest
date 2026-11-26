@@ -1,0 +1,15 @@
+{
+  "name": "TURNERO - Solicitud de turnos",
+  "short_name": "TURNERO",
+  "description": "Solicita y gestiona turnos desde cualquier dispositivo",
+  "lang": "es-AR",
+  "start_url": "/solicitar-turno",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f4f6fb",
+  "theme_color": "#17233d",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
