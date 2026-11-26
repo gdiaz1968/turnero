@@ -60,7 +60,7 @@ function normalizarMensaje(texto) {
 }
 
 function App() {
-  if (window.location.pathname.replace(/\/$/, '') === '/solicitar-turno') return <Cliente />
+  if (window.location.hash === '#solicitar-turno') return <Cliente />
 
   const [formulario, setFormulario] = useState({
     nombre: '', telefono: '', servicio: '', fecha: fechaLocal(), hora: '', observaciones: '',
@@ -199,7 +199,7 @@ function App() {
           <div className="brand-mark">T</div>
           <div><strong>TURNERO</strong><span>Gestion de agenda</span></div>
         </div>
-        <a className="client-preview-link" href="/solicitar-turno" target="_blank" rel="noreferrer">Ver pantalla cliente</a>
+        <a className="client-preview-link" href="/#solicitar-turno" target="_blank" rel="noreferrer">Ver pantalla cliente</a>
         <p className="nav-caption">MENU PRINCIPAL</p>
         <nav className="side-nav" aria-label="Menu principal">
           {vistas.map((vista) => (
