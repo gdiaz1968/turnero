@@ -1,12 +1,12 @@
 import { useState } from 'react'
 
-const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3032').replace(/\\/$/, '')
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3032').replace(/\/$/, '')
 
 function fechaHoy() {
   const hoy = new Date()
   const mes = String(hoy.getMonth() + 1).padStart(2, '0')
   const dia = String(hoy.getDate()).padStart(2, '0')
-  return \`${hoy.getFullYear()}-\${mes}-\${dia}\`
+  return hoy.getFullYear() + '-' + mes + '-' + dia
 }
 
 function Campo({ etiqueta, children }) {
@@ -29,7 +29,7 @@ export default function Cliente() {
     setEnviando(true)
     setError('')
     try {
-      const respuesta = await fetch(\`\${API_URL}/api/turnos\`, {
+      const respuesta = await fetch(API_URL + '/api/turnos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formulario),
@@ -64,7 +64,7 @@ export default function Cliente() {
         <section className="client-card">
           {confirmacion ? (
             <div className="client-confirmation" role="status">
-              <div className="client-confirmation-mark">✓</div>
+              <div className="client-confirmation-mark">OK</div>
               <h2>Solicitud recibida</h2>
               <p>Tu solicitud numero <strong>{confirmacion.id}</strong> fue registrada correctamente.</p>
               <p>Fecha solicitada: <strong>{confirmacion.fecha.split('-').reverse().join('/')}</strong><br />Horario solicitado: <strong>{confirmacion.hora}</strong></p>
