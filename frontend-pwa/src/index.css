@@ -800,3 +800,42 @@ button:disabled {
   .legend-dot { width: 6px; height: 6px; flex-basis: 6px; }
   .selected-day-panel .appointment-item { grid-template-columns: 48px minmax(0, 1fr); }
 }
+
+
+/* Pantalla publica para solicitar turnos */
+.client-page { min-height: 100vh; padding: 34px 20px 50px; background: #f4f6fb; }
+.client-header { width: min(100%, 1060px); margin: 0 auto 28px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.client-brand { display: flex; align-items: center; gap: 12px; color: #17233d; }
+.client-brand-mark { display: grid; width: 46px; height: 46px; place-items: center; border-radius: 13px; color: #fff; background: #5368d9; font-size: 23px; font-weight: 850; }
+.client-brand strong { display: block; font-size: 18px; letter-spacing: .08em; }
+.client-brand span { display: block; margin-top: 3px; color: #778198; font-size: 12px; }
+.client-header-note { color: #66728a; font-size: 13px; }
+.client-content { width: min(100%, 1060px); margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, .78fr); gap: 24px; align-items: start; }
+.client-intro { padding: 30px 8px; }
+.client-kicker { margin: 0 0 12px; color: #5368d9; font-size: 12px; font-weight: 800; letter-spacing: .12em; }
+.client-intro h1 { max-width: 550px; margin: 0; color: #17233d; font-size: clamp(30px, 4vw, 48px); line-height: 1.08; letter-spacing: -.04em; }
+.client-intro > p:not(.client-kicker) { max-width: 490px; margin: 18px 0 0; color: #65718a; font-size: 16px; line-height: 1.65; }
+.client-steps { display: grid; gap: 14px; margin-top: 32px; }
+.client-step { display: flex; align-items: flex-start; gap: 12px; color: #56627a; font-size: 13px; line-height: 1.5; }
+.client-step b { display: grid; width: 28px; height: 28px; flex: 0 0 28px; place-items: center; border-radius: 9px; color: #4c60ce; background: #e9ecff; }
+.client-card { border: 1px solid #e5e9f2; border-radius: 18px; padding: 26px; background: #fff; box-shadow: 0 12px 35px rgb(30 43 75 / 7%); }
+.client-card h2 { margin: 0; color: #1b2740; font-size: 21px; }
+.client-card > p { margin: 8px 0 22px; color: #7a8599; font-size: 13px; line-height: 1.5; }
+.client-form { display: grid; gap: 15px; }
+.client-form .form-field { gap: 7px; }
+.client-form .campo { min-height: 46px; }
+.client-form .form-row { gap: 12px; }
+.client-submit { width: 100%; min-height: 48px; margin-top: 4px; border: 0; border-radius: 9px; color: #fff; background: #5368d9; font-weight: 750; }
+.client-submit:hover { background: #4357c4; }
+.client-message { margin-bottom: 16px; border-radius: 9px; padding: 12px 14px; font-size: 13px; line-height: 1.5; }
+.client-message.success { color: #216448; background: #e8f7f0; }
+.client-message.error { color: #9b3434; background: #fff0f0; }
+.client-confirmation { padding: 20px 0 4px; text-align: center; }
+.client-confirmation-mark { display: grid; width: 58px; height: 58px; margin: 0 auto 16px; place-items: center; border-radius: 50%; color: #176344; background: #e5f6ef; font-size: 27px; font-weight: 800; }
+.client-confirmation h2 { margin-bottom: 10px; }
+.client-confirmation p { color: #65718a; font-size: 14px; line-height: 1.6; }
+.client-footer { width: min(100%, 1060px); margin: 28px auto 0; color: #8993a6; text-align: center; font-size: 11px; }
+.client-install { border: 1px solid #dce2ef; border-radius: 8px; padding: 9px 12px; color: #4e5fc1; background: #fff; font-size: 12px; font-weight: 700; }
+@media (max-width: 760px) { .client-page { padding: 22px 14px 35px; } .client-header { margin-bottom: 12px; } .client-header-note { display: none; } .client-content { grid-template-columns: 1fr; gap: 8px; } .client-intro { padding: 22px 4px 12px; } .client-intro h1 { font-size: 32px; } .client-intro > p:not(.client-kicker) { margin-top: 12px; font-size: 14px; } .client-steps { grid-template-columns: 1fr; gap: 9px; margin-top: 18px; } .client-card { padding: 21px 17px; border-radius: 14px; } .client-footer { margin-top: 20px; } }
+.client-preview-link { display: block; margin: 0 8px 22px; border: 1px solid rgb(230 236 248 / 25%); border-radius: 8px; padding: 10px 11px; color: #dce4f8; text-decoration: none; font-size: 12px; font-weight: 700; }
+.client-preview-link:hover { background: rgb(255 255 255 / 8%); }
