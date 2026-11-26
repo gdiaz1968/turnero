@@ -3,7 +3,7 @@
   "short_name": "TURNERO",
   "description": "Solicita y gestiona turnos desde cualquier dispositivo",
   "lang": "es-AR",
-  "start_url": "/solicitar-turno",
+  "start_url": "/#solicitar-turno",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
