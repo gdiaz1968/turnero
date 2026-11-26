@@ -587,7 +587,7 @@ button:disabled {
     inset: auto 0 0;
     z-index: 10;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     border-top: 1px solid #e3e7f0;
     padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
     background: #fff;
