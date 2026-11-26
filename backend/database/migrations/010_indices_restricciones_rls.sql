@@ -32,10 +32,6 @@ CREATE UNIQUE INDEX uq_politicas_senas_ambito
     );
 
 ALTER TABLE turnos_detalle
-    ADD CONSTRAINT chk_turnos_detalle_duracion_intervalo
-        CHECK (fin = inicio + make_interval(mins => duracion_minutos));
-
-ALTER TABLE turnos_detalle
     ADD CONSTRAINT ex_turnos_detalle_sin_superposicion
     EXCLUDE USING gist (
         id_empresa WITH =,
