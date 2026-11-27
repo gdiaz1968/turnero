@@ -18,10 +18,23 @@ export default function Cliente() {
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState('')
   const [confirmacion, setConfirmacion] = useState(null)
+  const [enlaceCopiado, setEnlaceCopiado] = useState(false)
+  const enlaceConsulta = confirmacion
+    ? window.location.origin + '/#consulta-turno/' + confirmacion.token
+    : ''
 
   function cambiarCampo(evento) {
     const { name, value } = evento.target
     setFormulario((actual) => ({ ...actual, [name]: value }))
+  }
+
+  async function copiarEnlace() {
+    try {
+      await navigator.clipboard.writeText(enlaceConsulta)
+      setEnlaceCopiado(true)
+    } catch {
+      setError('No se pudo copiar el enlace. Usa la opcion Abrir consulta y copia la direccion del navegador.')
+    }
   }
 
   async function solicitarTurno(evento) {
@@ -36,7 +49,9 @@ export default function Cliente() {
       })
       const datos = await respuesta.json()
       if (!respuesta.ok || !datos.success) throw new Error(datos.message || 'No se pudo enviar la solicitud.')
-      setConfirmacion({ id: datos.id, fecha: formulario.fecha, hora: formulario.hora })
+      if (!datos.consultaToken) throw new Error('El turno se registro, pero el servidor no devolvio el enlace de consulta. Contacta al negocio.')
+      setConfirmacion({ id: datos.id, fecha: formulario.fecha, hora: formulario.hora, token: datos.consultaToken })
+      setEnlaceCopiado(false)
     } catch (e) {
       setError(e.message || 'No se pudo conectar con el servidor. Verifica tu conexion e intenta nuevamente.')
     } finally {
@@ -58,7 +73,7 @@ export default function Cliente() {
           <div className="client-steps">
             <div className="client-step"><b>1</b><span>Completa tus datos de contacto.</span></div>
             <div className="client-step"><b>2</b><span>Indica el servicio y el horario que preferis.</span></div>
-            <div className="client-step"><b>3</b><span>Espera la confirmacion del profesional.</span></div>
+            <div className="client-step"><b>3</b><span>Guarda el enlace para consultar el estado de tu solicitud.</span></div>
           </div>
         </section>
         <section className="client-card">
@@ -68,8 +83,14 @@ export default function Cliente() {
               <h2>Solicitud recibida</h2>
               <p>Tu solicitud numero <strong>{confirmacion.id}</strong> fue registrada correctamente.</p>
               <p>Fecha solicitada: <strong>{confirmacion.fecha.split('-').reverse().join('/')}</strong><br />Horario solicitado: <strong>{confirmacion.hora}</strong></p>
-              <p>El turno queda pendiente hasta que el profesional lo confirme.</p>
-              <button type="button" className="client-submit" onClick={() => { setConfirmacion(null); setFormulario({ nombre: '', telefono: '', servicio: '', fecha: fechaHoy(), hora: '', observaciones: '' }) }}>Solicitar otro turno</button>
+              <p>Tu solicitud queda pendiente. Guarda este enlace para consultar si fue confirmada, rechazada o cancelada.</p>
+              <div className="client-consulta-link">
+                <button type="button" className="client-submit" onClick={copiarEnlace}>
+                  {enlaceCopiado ? 'Enlace copiado' : 'Copiar enlace de consulta'}
+                </button>
+                <a className="client-consulta-open" href={enlaceConsulta}>Abrir consulta del turno</a>
+              </div>
+              <button type="button" className="client-submit client-another" onClick={() => { setConfirmacion(null); setFormulario({ nombre: '', telefono: '', servicio: '', fecha: fechaHoy(), hora: '', observaciones: '' }) }}>Solicitar otro turno</button>
             </div>
           ) : (
             <>
