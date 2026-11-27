@@ -1,0 +1,31 @@
+.client-consulta-link {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0 12px;
+}
+.client-consulta-link .client-submit {
+  margin-top: 0;
+}
+.client-consulta-open {
+  display: inline-flex;
+  min-height: 43px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dce2ef;
+  border-radius: 9px;
+  padding: 0 14px;
+  color: #4e5fc1;
+  background: #fff;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 750;
+}
+.client-consulta-open:hover {
+  background: #f6f7ff;
+}
+.client-submit.client-another {
+  margin-top: 8px;
+  color: #4e5fc1;
+  border: 1px solid #dce2ef;
+  background: #fff;
+}
