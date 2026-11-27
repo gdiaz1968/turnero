@@ -29,3 +29,54 @@
   border: 1px solid #dce2ef;
   background: #fff;
 }
+
+
+.client-consulta-card {
+  margin-top: 22px;
+}
+.client-consulta-card > h2 {
+  margin-top: 0;
+}
+.client-codigo-consulta {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0;
+  padding: 17px;
+  border: 1px solid #dce2ef;
+  border-radius: 12px;
+  background: #f7f8fc;
+}
+.client-codigo-consulta > span {
+  color: #65718a;
+  font-size: 12px;
+  font-weight: 700;
+}
+.client-codigo-consulta > strong {
+  color: #27334c;
+  font-size: 22px;
+  letter-spacing: .12em;
+  overflow-wrap: anywhere;
+}
+.client-codigo-consulta small {
+  color: #65718a;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.client-confirmation-inline {
+  margin: 18px 0 24px;
+  padding: 18px;
+  border: 1px solid #cce9dc;
+  border-radius: 12px;
+  background: #f2fbf6;
+}
+.client-consulta-resultado {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid #e8ebf2;
+}
+.client-consulta-resultado .consulta-estado {
+  margin-top: 0;
+}
+.client-consulta-resultado .consulta-button {
+  width: 100%;
+}
