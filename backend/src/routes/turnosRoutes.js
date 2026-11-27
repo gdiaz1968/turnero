@@ -49,7 +49,7 @@ function validarHora(hora) {
 
 function generarCodigoConsulta() {
   // Codigo aleatorio de 64 bits; solo se almacena su hash SHA-256.
-  return crypto.randomBytes(8).toString("hex").toUpperCase();
+  return crypto.randomBytes(8).toString("hex");
 }
 
 function calcularHashToken(token) {
@@ -325,7 +325,7 @@ router.post("/", async (req, res) => {
       success: true,
       message: "El turno quedo registrado como pendiente de confirmacion.",
       id: turno.rows[0].id,
-      codigoConsulta
+      codigoConsulta: codigoConsulta.toUpperCase()
     });
   } catch (error) {
     if (conexion) {
