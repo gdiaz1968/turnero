@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Cliente from './Cliente.jsx'
+import ConsultaTurno from './ConsultaTurno.jsx'
 
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3032').replace(/\/$/, '')
 
@@ -61,6 +62,8 @@ function normalizarMensaje(texto) {
 
 function App() {
   if (window.location.hash === '#solicitar-turno') return <Cliente />
+  const rutaConsulta = window.location.hash.match(/^#consulta-turno\/([A-Za-z0-9_-]{43})$/)
+  if (rutaConsulta) return <ConsultaTurno token={rutaConsulta[1]} />
 
   const [formulario, setFormulario] = useState({
     nombre: '', telefono: '', servicio: '', fecha: fechaLocal(), hora: '', observaciones: '',
