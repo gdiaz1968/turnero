@@ -21,7 +21,7 @@ const TRANSICIONES = {
 };
 
 function validarFecha(fecha) {
-  const coincidencia = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(fecha);
+  const coincidencia = /^(\d{4})-(\d{2})-(\d{2})$/.exec(fecha);
   if (!coincidencia) return false;
 
   const anio = Number(coincidencia[1]);
@@ -37,7 +37,7 @@ function validarFecha(fecha) {
 }
 
 function validarHora(hora) {
-  const coincidencia = /^(\\d{2}):(\\d{2})(?::(\\d{2}))?$/.exec(hora);
+  const coincidencia = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(hora);
   if (!coincidencia) return false;
 
   const horas = Number(coincidencia[1]);
@@ -47,8 +47,9 @@ function validarHora(hora) {
   return horas <= 23 && minutos <= 59 && segundos <= 59;
 }
 
-function generarTokenConsulta() {
-  return crypto.randomBytes(32).toString("base64url");
+function generarCodigoConsulta() {
+  // Codigo aleatorio de 64 bits; solo se almacena su hash SHA-256.
+  return crypto.randomBytes(8).toString("hex").toUpperCase();
 }
 
 function calcularHashToken(token) {
@@ -97,6 +98,58 @@ router.get("/consulta/:token", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "No se pudo consultar el estado del turno. Intenta nuevamente."
+    });
+  }
+});
+
+// Consulta publica dentro de la pantalla del cliente: requiere telefono y codigo privado.
+router.post("/consulta", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+
+  const telefono = String((req.body || {}).telefono || "").replace(/\D/g, "");
+  const codigo = String((req.body || {}).codigo || "")
+    .trim()
+    .replace(/-/g, "")
+    .toLowerCase();
+
+  if (telefono.length < 8 || telefono.length > 15 || !/^[a-f0-9]{16}$/.test(codigo)) {
+    return res.status(400).json({
+      success: false,
+      message: "Ingresa el telefono y el codigo de consulta correctamente."
+    });
+  }
+
+  try {
+    const resultado = await pool.query(
+      `SELECT
+         t.servicio,
+         TO_CHAR(t.fecha, 'YYYY-MM-DD') AS fecha,
+         TO_CHAR(t.hora, 'HH24:MI') AS hora,
+         t.estado
+       FROM turnos t
+       INNER JOIN clientes c ON c.id = t.cliente_id
+       WHERE regexp_replace(c.telefono, '[^0-9]', '', 'g') = $1
+         AND t.consulta_token_hash = $2
+       LIMIT 1`,
+      [telefono, calcularHashToken(codigo)]
+    );
+
+    if (resultado.rowCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No encontramos un turno con ese telefono y codigo. Verifica los datos e intenta nuevamente."
+      });
+    }
+
+    return res.json({
+      success: true,
+      turno: resultado.rows[0]
+    });
+  } catch (error) {
+    console.error("Error consultando turno por telefono y codigo:", error);
+    return res.status(500).json({
+      success: false,
+      message: "No se pudo consultar el turno. Intenta nuevamente."
     });
   }
 });
@@ -244,8 +297,8 @@ router.post("/", async (req, res) => {
   }
 
   let conexion;
-  const tokenConsulta = generarTokenConsulta();
-  const hashTokenConsulta = calcularHashToken(tokenConsulta);
+  const codigoConsulta = generarCodigoConsulta();
+  const hashTokenConsulta = calcularHashToken(codigoConsulta);
 
   try {
     conexion = await pool.connect();
@@ -272,7 +325,7 @@ router.post("/", async (req, res) => {
       success: true,
       message: "El turno quedo registrado como pendiente de confirmacion.",
       id: turno.rows[0].id,
-      consultaToken: tokenConsulta
+      codigoConsulta
     });
   } catch (error) {
     if (conexion) {
