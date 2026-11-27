@@ -1,0 +1,57 @@
+.consulta-page {
+  min-height: 100vh;
+  padding: 28px 16px 40px;
+  background: #f4f6fb;
+  color: #17233d;
+}
+.consulta-header {
+  width: min(100%, 620px);
+  margin: 0 auto 24px;
+}
+.consulta-brand { display: flex; align-items: center; gap: 11px; }
+.consulta-brand-mark {
+  display: grid; width: 44px; height: 44px; place-items: center;
+  border-radius: 12px; color: #fff; background: #5368d9;
+  font-size: 22px; font-weight: 850;
+}
+.consulta-brand strong { display: block; font-size: 17px; letter-spacing: .08em; }
+.consulta-brand span { display: block; margin-top: 3px; color: #778198; font-size: 12px; }
+.consulta-card {
+  width: min(100%, 620px); margin: 0 auto; border: 1px solid #e5e9f2;
+  border-radius: 17px; padding: 28px; background: #fff;
+  box-shadow: 0 12px 35px rgb(30 43 75 / 7%);
+}
+.consulta-kicker { margin: 0 0 9px; color: #5368d9; font-size: 11px; font-weight: 800; letter-spacing: .12em; }
+.consulta-card h1 { margin: 0 0 22px; color: #17233d; font-size: 27px; }
+.consulta-loading { padding: 28px 0; color: #65718a; text-align: center; font-size: 14px; }
+.consulta-error { border-radius: 10px; padding: 16px; color: #963c3c; background: #fff0f0; font-size: 14px; }
+.consulta-error p { line-height: 1.5; }
+.consulta-estado { border-radius: 12px; padding: 19px; }
+.consulta-estado-etiqueta { display: inline-block; border-radius: 20px; padding: 5px 10px; font-size: 10px; font-weight: 850; letter-spacing: .06em; }
+.consulta-estado h2 { margin: 13px 0 7px; font-size: 20px; }
+.consulta-estado p { margin: 0; font-size: 13px; line-height: 1.55; }
+.consulta-estado.pendiente { color: #80500d; background: #fff4df; }
+.consulta-estado.confirmado { color: #176344; background: #e5f6ef; }
+.consulta-estado.rechazado { color: #963c3c; background: #fff0f0; }
+.consulta-estado.cancelado { color: #4c5669; background: #eef0f4; }
+.consulta-estado.finalizado { color: #354b9c; background: #edf0ff; }
+.consulta-datos { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px; }
+.consulta-datos div { min-width: 0; border: 1px solid #e8ebf2; border-radius: 9px; padding: 13px; }
+.consulta-datos div:first-child { grid-column: 1 / -1; }
+.consulta-datos span, .consulta-datos strong { display: block; }
+.consulta-datos span { margin-bottom: 6px; color: #7a8599; font-size: 11px; }
+.consulta-datos strong { overflow-wrap: anywhere; color: #27334c; font-size: 14px; }
+.consulta-actualizacion { margin: 17px 0 12px; color: #8993a6; font-size: 11px; }
+.consulta-button {
+  min-height: 43px; border: 0; border-radius: 9px; padding: 0 17px;
+  color: #fff; background: #5368d9; font-size: 13px; font-weight: 750;
+}
+.consulta-button:hover { background: #4357c4; }
+.consulta-button:disabled { opacity: .6; cursor: wait; }
+.consulta-footer { width: min(100%, 620px); margin: 20px auto 0; color: #8993a6; text-align: center; font-size: 11px; line-height: 1.5; }
+@media (max-width: 520px) {
+  .consulta-page { padding: 20px 13px 30px; }
+  .consulta-card { border-radius: 14px; padding: 21px 17px; }
+  .consulta-card h1 { font-size: 23px; }
+  .consulta-estado h2 { font-size: 18px; }
+}
