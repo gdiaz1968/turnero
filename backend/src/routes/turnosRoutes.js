@@ -1,4 +1,5 @@
 const express = require("express");
+const crypto = require("crypto");
 const router = express.Router();
 const { pool } = require("../config/database");
 
@@ -20,7 +21,7 @@ const TRANSICIONES = {
 };
 
 function validarFecha(fecha) {
-  const coincidencia = /^(\d{4})-(\d{2})-(\d{2})$/.exec(fecha);
+  const coincidencia = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(fecha);
   if (!coincidencia) return false;
 
   const anio = Number(coincidencia[1]);
@@ -36,7 +37,7 @@ function validarFecha(fecha) {
 }
 
 function validarHora(hora) {
-  const coincidencia = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(hora);
+  const coincidencia = /^(\\d{2}):(\\d{2})(?::(\\d{2}))?$/.exec(hora);
   if (!coincidencia) return false;
 
   const horas = Number(coincidencia[1]);
@@ -45,6 +46,60 @@ function validarHora(hora) {
 
   return horas <= 23 && minutos <= 59 && segundos <= 59;
 }
+
+function generarTokenConsulta() {
+  return crypto.randomBytes(32).toString("base64url");
+}
+
+function calcularHashToken(token) {
+  return crypto.createHash("sha256").update(token, "utf8").digest("hex");
+}
+
+// Consulta publica: el token autoriza a ver unicamente los datos no sensibles del turno.
+router.get("/consulta/:token", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  res.set("Referrer-Policy", "no-referrer");
+
+  const token = String(req.params.token || "");
+  if (!/^[A-Za-z0-9_-]{43}$/.test(token)) {
+    return res.status(404).json({
+      success: false,
+      message: "No se encontro una consulta valida para ese enlace."
+    });
+  }
+
+  try {
+    const resultado = await pool.query(
+      `SELECT
+         servicio,
+         TO_CHAR(fecha, 'YYYY-MM-DD') AS fecha,
+         TO_CHAR(hora, 'HH24:MI') AS hora,
+         estado
+       FROM turnos
+       WHERE consulta_token_hash = $1
+       LIMIT 1`,
+      [calcularHashToken(token)]
+    );
+
+    if (resultado.rowCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "El enlace no existe o no es valido."
+      });
+    }
+
+    res.json({
+      success: true,
+      turno: resultado.rows[0]
+    });
+  } catch (error) {
+    console.error("Error consultando estado publico del turno:", error);
+    res.status(500).json({
+      success: false,
+      message: "No se pudo consultar el estado del turno. Intenta nuevamente."
+    });
+  }
+});
 
 // Listar turnos. Si se envia ?fecha=AAAA-MM-DD, filtra por ese dia.
 router.get("/", async (req, res) => {
@@ -189,6 +244,8 @@ router.post("/", async (req, res) => {
   }
 
   let conexion;
+  const tokenConsulta = generarTokenConsulta();
+  const hashTokenConsulta = calcularHashToken(tokenConsulta);
 
   try {
     conexion = await pool.connect();
@@ -203,10 +260,10 @@ router.post("/", async (req, res) => {
 
     const turno = await conexion.query(
       `INSERT INTO turnos
-         (cliente_id, servicio, fecha, hora, observaciones)
-       VALUES ($1, $2, $3, $4, $5)
+         (cliente_id, servicio, fecha, hora, observaciones, consulta_token_hash)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id`,
-      [cliente.rows[0].id, servicio, fecha, hora, observaciones || null]
+      [cliente.rows[0].id, servicio, fecha, hora, observaciones || null, hashTokenConsulta]
     );
 
     await conexion.query("COMMIT");
@@ -214,7 +271,8 @@ router.post("/", async (req, res) => {
     res.status(201).json({
       success: true,
       message: "El turno quedo registrado como pendiente de confirmacion.",
-      id: turno.rows[0].id
+      id: turno.rows[0].id,
+      consultaToken: tokenConsulta
     });
   } catch (error) {
     if (conexion) {
