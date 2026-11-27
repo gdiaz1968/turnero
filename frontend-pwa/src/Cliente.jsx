@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import './ClienteConsulta.css'
 
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3032').replace(/\/$/, '')
 
